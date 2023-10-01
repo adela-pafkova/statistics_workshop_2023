@@ -4,28 +4,29 @@ install.packages("rstudioapi")
 library(rstudioapi)
 barbie_light <- "https://raw.githubusercontent.com/emhogg/barbie_r_studio_themes/main/Barbie_Light.rstheme"
 rstudioapi::addTheme(barbie_light, apply = TRUE)
+# LIBRARIES----
+library(readxl)
 
-# Basic ANOVA
-A <- c(115,120,135,155,160,170,175,200,205,220)
-B <- c(115,145,75,60,95,95,170,105,130,120) 
-C <- c(155,75,110,145,85,105,140,75,140,110) 
-height <- c(A,B,C)
-fertiliser <- c(rep("A",length(A)),rep("B",length(B)),rep("C",length(C))) 
-alldata <- data.frame(fertiliser,height) 
+# EXERCISE 1 ----
+# EXCERCISE 2 -----
+## load data
+soils <- read_excel("data/Peru_Soil_Data(1) (1).xlsx")
+## quick summary
+dim(soils) 
+names(soils) 
+soils$Soil_pH 
+soils[,c(4,7)] 
+head(soils) 
+summary(soils) 
 
-#Construct a model and do anova
+## histograms
+hist(soils$Soil_pH)
+hist(soils$Soil_pH,breaks=10) 
+hist(soils$Soil_pH,breaks=10,col="grey") 
+hist(soils$Soil_pH,breaks=10,col="grey",xlab="Soil pH",main="")
+abline(v=median(soils$Soil_pH)) 
+abline(v=mean(soils$Soil_pH)) 
 
-height_lm <- lm(height~fertiliser, data=alldata)
-anova(height_lm)
-summary(height_lm)
-
-# Test assumptions 
-height_resids <- resid(height_lm) 
-shapiro.test(height_resids) # Test normality of residuals
-bartlett.test(height~fertiliser,data=alldata) # Test equality of variances
-
-# Plot the model
-plot(height_lm)
-  
-(height_aov <- aov(height~fertiliser,data=alldata))
-TukeyHSD(height_aov) 
+## plot diff relationships
+plot(Soil_pH~Habitat,data=soils) 
+plot(Potassium~Habitat,data=soils) 
