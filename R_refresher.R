@@ -43,7 +43,7 @@ shapiro.test(lm_pH_resids)
 bartlett.test(Soil_pH ~Habitat,data=soils) 
 lm_K_resids <- resid(lm_K) 
 shapiro.test(lm_K_resids) 
-bartlett.test(Potassium ~Habitat,data=soils) 
+bartlett.test(Potassium ~Habitat,data=soils) #Not all groups have the same variance
 
 plot(lm_pH) 
 plot(lm_K) 
@@ -59,7 +59,7 @@ soils$log_K <- log(soils$Potassium)
 lm_log_K <- lm(log_K ~Habitat,data=soils) 
 anova(lm_log_K) 
 
-lm_log_K_resids <- resid(lm_K) 
+lm_log_K_resids <- resid(lm_log_K) 
 shapiro.test(lm_log_K_resids) 
 bartlett.test(log_K ~Habitat,data=soils) 
-plot(lm_log_K) 
+plot(lm_log_K) #scale/location is now nearly perfectly horizontal
