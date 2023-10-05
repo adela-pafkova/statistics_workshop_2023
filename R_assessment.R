@@ -82,6 +82,7 @@ anova(lm_log_P) %>%
 plot(lm_log_P) #looks better but worse results? p is large
 lm_log_P_resids <- resid(lm_log_P)
 shapiro.test(lm_log_P_resids) # checks out
+3
 bartlett.test(log_leaf_A~Habitat,data=inga) # checks out
 
 # Tukeys test to see what is driving significance ( what groups are significantly different)
@@ -92,4 +93,26 @@ Tukey <- TukeyHSD(P_Leaf_aov)
 # upland and floodplain are significantly different, 0.0012
 # upland and generalist are very much not significantly different, 0.78
 
+
+#EXERCISE 3: Multiple explanatorz variables (100 marks)
+
+# a) Plot P and C as y and x respectively, differentiate symbols for diff habitats, fit trendline
+
+#preliminary plot
+plot(P_Leaf ~ C_Leaf, data = inga) # looks like an intercept only relationship
+
+ggplot(inga, aes(x=C_Leaf,y=P_Leaf))
+inga$Habitat <-as.factor(inga$Habitat)
+floodplain <- filter(inga, Habitat=="floodplain")
+generalist <- filter(inga, Habitat=="generalist")
+upland <- filter(inga, Habitat=="upland")
+
+ggplot(inga, aes(x=C_Leaf,y=P_Leaf))+
+  geom_point(aes(col=Habitat, shape=Habitat))+
+  geom_smooth(method="lm",se=F,data=floodplain,aes(col=Habitat))+
+  geom_smooth(method="lm",se=F,data=generalist,aes(col=Habitat))+
+  geom_smooth(method="lm",se=F,data=upland,aes(col=Habitat))+
+  labs(x="Leaf Carbon Concentration (mg/g)", y="Leaf Phosphorous Concentration (mg/g)", title="Relationship of Carbon and Phosphorus in Leaves")+
+  theme(plot.title = element_text(hjust=0.5))+
+  theme_classic()
 
