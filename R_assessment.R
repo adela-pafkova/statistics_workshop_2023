@@ -7,8 +7,12 @@
 #LIBRARIES ----
 library(tidyverse)
 library(ggplot2)
+library(MuMIn)
+library(lme4)
 #install.packages("colourpicker")
 library(colourpicker)
+install.packages("car")
+library(car)
 
 #LOAD DATA ----
 inga <- read.csv('data/Inga_traits.csv', stringsAsFactors=T, row.names=1)
@@ -89,8 +93,8 @@ bartlett.test(P_Leaf ~Habitat,data=inga) # nope (p < 0.05); variances are not eq
 plot(lm_P) # not great, esp. scale/location
 
 # d) Improve model: log transform?
-
-lm_log_P <- lm(log_leaf_A~Habitat, data = inga)
+inga$log_P <- log(inga$P_Leaf)
+lm_log_P <- lm(log_P~Habitat, data = inga)
 anova(lm_log_P) %>%
   as.data.frame() %>%
   write.csv(file = "Log_transformed_P~Habitat_anova_table.csv")
@@ -98,8 +102,7 @@ anova(lm_log_P) %>%
 plot(lm_log_P) #looks better but worse results? p is large
 lm_log_P_resids <- resid(lm_log_P)
 shapiro.test(lm_log_P_resids) # checks out
-3
-bartlett.test(log_leaf_A~Habitat,data=inga) # checks out
+bartlett.test(log_P~Habitat,data=inga) # checks out
 
 # Tukeys test to see what is driving significance ( what groups are significantly different)
 P_Leaf_aov <- aov(P_Leaf~Habitat,data=inga)
@@ -116,6 +119,20 @@ Tukey <- TukeyHSD(P_Leaf_aov)
 
 #preliminary plot
 plot(P_Leaf ~ C_Leaf, data = inga) # looks good but outliers
+
+# This will be a correlation 
+lm_PC <- lm(P_Leaf~C_Leaf, data = inga)
+lm_PC_resids <- resid(lm_PC) 
+shapiro.test(lm_PC_resids) # does not check out
+bartlett.test(inga$P_Leaf, inga$C_Leaf) # can' t use bartlett test on a regression
+
+#log transformed P
+lm_log_PC <- lm(log_P~C_Leaf, data = inga)
+lm_log_PC_resids <- resid(lm_PC) 
+shapiro.test(lm_log_PC_resids)
+
+inga$log_P
+inga$C_Leaf
 
 ggplot(inga, aes(x=C_Leaf,y=P_Leaf))
 inga$Habitat <-as.factor(inga$Habitat)
@@ -135,23 +152,65 @@ ggplot(inga, aes(x=C_Leaf,y=P_Leaf))+
 # b) copied from Cory - Fuse habitats
 
 (inga <- inga %>% 
-    mutate(habitat = case_when(Habitat == "floodplain" ~ 'NeedFlood',
-                                    TRUE ~ "NoFlood")))
+    mutate(habitat = case_when(Habitat == "floodplain" ~ 'Flooded',
+                                    TRUE ~ "Dry")))
 View(inga)
 
 #viewing the new category
 
 inga$habitat <- as.factor(inga$habitat)
-Flood<- filter(inga, habitat=="NeedFlood")
-NoFlood <- filter(inga, habitat=="NoFlood")
+Flooded<- filter(inga, habitat=="Flooded")
+Dry <- filter(inga, habitat=="Dry")
 
 ggplot(inga, aes(x=C_Leaf,y=P_Leaf))+
   geom_point(aes(col=habitat, shape=habitat))+
-  geom_smooth(method="lm",se=F,data=Flood,aes(col=habitat))+
-  geom_smooth(method="lm",se=F,data=NoFlood,aes(col=habitat))+
+  geom_smooth(method="lm",se=F,data=Flooded,aes(col=habitat))+
+  geom_smooth(method="lm",se=F,data=Dry,aes(col=habitat))+
   labs(x="Leaf carbon concentration", y="Leaf phosphorus concentration") +
-  scale_colour_manual (labels = c("Flooded", "Not flooded"), values = c("darkseagreen","coral")) +    
+  scale_colour_manual (values = c("darkseagreen","coral")) +    
   theme_bw()
 
 
-plot (C_Leaf~SuperHabitat, data=inga)
+plot(C_Leaf~habitat, data=inga)
+
+
+# Make a model with and without interaction
+
+lm_P_habitat <- lm(P_Leaf ~ habitat, data=inga)
+lm_P_mixed <- lm(P_Leaf~C_Leaf + habitat,data=inga) 
+lm_P_mixed_interaction <-lm(P_Leaf~C_Leaf * habitat,data=inga) 
+AIC(lm_log_P, lm_P_habitat, lm_P_mixed, lm_P_mixed_interaction)
+AICc(lm_log_P, lm_P_habitat, lm_P_mixed, lm_P_mixed_interaction)
+
+# Same but with log_P
+
+lm_log_P_habitat <- lm(log_P ~ habitat, data=inga)
+lm_log_P_mixed <- lm(log_P~C_Leaf + habitat,data=inga) 
+lm_log_P_mixed_interaction <-lm(log_P~C_Leaf * habitat,data=inga) 
+AIC(lm_log_P, lm_log_P_habitat, lm_log_P_mixed, lm_log_P_mixed_interaction)
+AICc(lm_log_P, lm_log_P_habitat, lm_log_P_mixed, lm_log_P_mixed_interaction)
+
+# Master comparison:
+
+AIC(lm_log_P, lm_log_P_habitat, lm_log_P_mixed, lm_log_P_mixed_interaction, lm_P_habitat, lm_P_mixed, lm_P_mixed_interaction)
+anova(lm_P_mixed_interaction)
+  # how do i know it doesn't violate assumptions?
+
+# That wierd thing from the tutorial
+
+summary(lm_P_mixed_interaction) 
+
+# c) Plot
+plot(lm_P_mixed_interaction)
+
+plot(lm_log_P_mixed_interaction)
+par(mfrow=c(2,2))
+dim(inga)
+
+inga_new <- inga[-35,]
+view(inga_new)
+
+#gamma distribution?
+
+# EXCERCISE 4 ----
+
