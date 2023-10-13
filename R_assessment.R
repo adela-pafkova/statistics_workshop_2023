@@ -11,7 +11,7 @@ library(MuMIn)
 library(lme4)
 #install.packages("colourpicker")
 library(colourpicker)
-install.packages("car")
+#install.packages("car")
 library(car)
 
 #LOAD DATA ----
@@ -108,7 +108,8 @@ bartlett.test(log_P~Habitat,data=inga) # checks out
 P_Leaf_aov <- aov(P_Leaf~Habitat,data=inga)
 Tukey <- TukeyHSD(P_Leaf_aov)
 
-#generalist and floodplain are nearly but not significantly different, 0.06
+#generalist and floodplain are nearly but no
+t significantly different, 0.06
 # upland and floodplain are significantly different, 0.0012
 # upland and generalist are very much not significantly different, 0.78
 
@@ -124,7 +125,7 @@ plot(P_Leaf ~ C_Leaf, data = inga) # looks good but outliers
 lm_PC <- lm(P_Leaf~C_Leaf, data = inga)
 lm_PC_resids <- resid(lm_PC) 
 shapiro.test(lm_PC_resids) # does not check out
-bartlett.test(inga$P_Leaf, inga$C_Leaf) # can' t use bartlett test on a regression
+#bartlett.test(inga$P_Leaf, inga$C_Leaf) # can' t use bartlett test on a regression
 
 #log transformed P
 lm_log_PC <- lm(log_P~C_Leaf, data = inga)
@@ -210,7 +211,65 @@ dim(inga)
 inga_new <- inga[-35,]
 view(inga_new)
 
+#remove tomentosa
+
+lm_P_mix_int_new <-lm(P_Leaf~C_Leaf * habitat,data=inga_new)
+plot(lm_P_mix_int_new)
+anova(lm_P_mix_int_new)
+
 #gamma distribution?
 
 # EXCERCISE 4 ----
 
+# Expansion
+inga_new$mev_ac <- inga_new$Mevalonic_Acid
+glm_acid_expansion <- glm(mev_ac~Expansion, data=inga_new, family=binomial)
+plot (glm_acid_expansion)
+boxplot(mev_ac~Expansion, data=inga_new)
+(ggplot(data = inga_new, aes(y = mev_ac, x= Expansion)) +
+  geom_boxplot() +
+    theme_bw())
+
+summary(glm_acid_expansion)
+
+glm_acid_null <- glm(mev_ac~1, data=inga_new, family=binomial)
+AIC(glm_acid_expansion, glm_acid_null)
+#expansion p=0.05, intercept is significant
+
+#expansion is better than null
+
+# trichome density
+inga_new$tri_D <- inga_new$Trichome_Density
+glm_acid_trichome <- glm(mev_ac~tri_D, data=inga_new, family=binomial)
+glm_acid_trichome
+summary(glm_acid_trichome) #not significant
+
+#compare all three
+
+AIC(glm_acid_expansion, glm_acid_null, glm_acid_trichome)
+#trichome has a sightlz better result than expansion
+
+#Plot both
+
+plot(mev_ac~tri_D, data=inga_new,pch=16) 
+plot(tri_D~mev_ac, data=inga_new, pch = 16)
+points(inga_new$trid_D,fitted(glm_acid_trichome), col="grey") 
+
+plot(mev_ac~Expansion, data=inga_new,pch=16) 
+plot(Expansion~mev_ac, data=inga_new, pch = 16)
+
+#b) mixed model
+glm_acid_mixed <- glm(mev_ac~Expansion + tri_D, data=inga_new, family=binomial)
+summary(glm_acid_mixed) #only exapansion is significant
+
+glm_acid_mixed_int <- glm(mev_ac~tri_D * Expansion, data=inga_new, family=binomial)
+summary(glm_acid_mixed_int) #nope
+
+#Didn't change my perception, there is no interaction, expansion is still the onle significant one
+# c)
+# code from stackoverflow: prop.table(table(studenti$sesso))["M"]
+
+New <-(data= data.frame ( Expansion= 32.16, Trichome_Density=0.2))
+predict(glm_acid_mixed,newdata=New,type="response")
+
+predict(dualmod)
